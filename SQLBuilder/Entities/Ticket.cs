@@ -3,7 +3,7 @@ internal class Ticket
 {
     public int Id { get; set; }
 
-    public int UserId { get; set; }
+    public int? UserId { get; set; }
 
     public string CustomerId { get; set; }
 
@@ -17,7 +17,7 @@ internal class Ticket
 
     public string Object { get; set; }
 
-    public DateTime CreateAt { get; set; }
+    public DateTime? CreateAt { get; set; }
 
-    public DateTime UpdateAt { get; set; }
+    public DateTime? UpdateAt { get; set; }
 }

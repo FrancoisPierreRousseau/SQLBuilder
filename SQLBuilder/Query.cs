@@ -1,4 +1,6 @@
-﻿namespace SQLBuilder;
+﻿using System.Linq.Expressions;
+
+namespace SQLBuilder;
 public class Query<T> where T : new()
 {
     private SqlBuilder _builder = new();
@@ -10,9 +12,10 @@ public class Query<T> where T : new()
         _builder.Select("*").From(table);
     }
 
-    public Query<T> Where(string condition, object parameters = null)
+    public Query<T> Where(Expression<Func<T, bool>> expression)
     {
-        _builder.Where(condition, parameters);
+        var (sql, parameters) = ExpressionToSqlTranslator.Translate(expression);
+        _builder.Where(sql, parameters);
         return this;
     }
 
@@ -25,6 +28,11 @@ public class Query<T> where T : new()
     public List<T> Execute(string connectionString)
     {
         return SqlExecutor.Query<T>(connectionString, _builder);
+    }
+
+    public List<T> Execute(TransactionManager transaction)
+    {
+        return SqlExecutor.Query<T>(transaction, _builder);
     }
 }
 

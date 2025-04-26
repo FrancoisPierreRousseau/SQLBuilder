@@ -25,7 +25,7 @@ public class SqlBuilder
         return this;
     }
 
-    public SqlBuilder Where(string condition, object parameters = null)
+    public SqlBuilder Where(string condition, Dictionary<string, object> parameters = null)
     {
         if(_where.Length == 0)
             _where.Append("WHERE ");
@@ -35,8 +35,8 @@ public class SqlBuilder
         _where.Append($"{condition} ");
 
         if(parameters != null)
-            foreach(var prop in parameters.GetType().GetProperties())
-                _parameters[prop.Name] = prop.GetValue(parameters);
+            foreach(var param in parameters)
+                _parameters[param.Key] = param.Value;
 
         return this;
     }
