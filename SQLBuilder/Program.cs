@@ -1,5 +1,9 @@
 ﻿// Deux partie, SQLBuilder et Orm
 
+/*
+ *  SQLBuilder (la plus flexible et facile à utiliser) 
+ */
+
 // CRUD Mais probléme, elles n'utilise pas la même connections.
 
 using Microsoft.Data.SqlClient;
@@ -111,6 +115,13 @@ catch
 
 
 
+
+
+
+/*
+ * ORM (peut être sympa, y a des truc à prendre, maais pas totalement finis)  
+ * 
+ * */
 
 
 
