@@ -221,7 +221,9 @@ var ticketsSkip = new Query2<Tickets>(connection)
 connection.Close();  */
 
 
-// Les JOINs
+// Les JOINs 
+
+// Fonctionnel mais géré les ambuigiité au niveaua des colonnes
 
 // var connection = new SqlConnection(connectionString);
 
