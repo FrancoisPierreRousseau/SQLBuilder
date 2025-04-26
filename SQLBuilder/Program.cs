@@ -1,5 +1,6 @@
 ﻿// CRUD Mais probléme, elles n'utilise pas la même connections.
 
+using Microsoft.Data.SqlClient;
 using SQLBuilder;
 using SQLBuilder.Entities;
 
@@ -96,16 +97,123 @@ catch
 } */
 
 /* 
- * Batch Insert / Update
+ * Batch Insert / Update (pour l'instant non présent)
  */
 
-Batch.Insert(new List<Ticket>
-    {
+/* Batch.Insert(new List<Ticket>
+ {
         new() { Object = "Un objet", State = 3, Priority = 2, Origin = 1, Status = 1 },
         new() { Object = "Un objet", State = 3, Priority = 2, Origin = 1, Status = 1 },
         new() { Object = "Un objet", State = 3, Priority = 2, Origin = 1, Status = 1 }
-     }, "Tickets", connectionString);
+ }, "Tickets", connectionString); */
 
 
 
 
+
+
+/*
+ * Début Scaffolding 
+ */
+
+// Génération des classes
+/* var reader = new DatabaseSchemaReader(connectionString);
+var tables = reader.GetTables();
+
+var generatedCode = ClassGenerator.GenerateClasses(tables, "MyApp.Models");
+
+File.WriteAllText("GeneratedModels.cs", generatedCode); */
+
+// CRUD
+/* var connection = new SqlConnection(connectionString);
+connection.Open();
+using var command = new SqlCommand("SELECT * FROM Tickets", connection);
+using var reader = command.ExecuteReader();
+var tickets = SimpleMapper.MapToList<Tickets>(reader); */
+
+// Avantage, je récupére l'id
+/* var connection = new SqlConnection(connectionString);
+connection.Open();
+
+var user = new Users
+{
+    Name = "François",
+    Password = "password",
+    FirstName = "firstName"
+};
+
+var newId = InsertBuilder.ExecuteInsert(connection, user, "Users");
+
+Console.WriteLine($"Inserted user with Id = {newId}"); */
+
+
+
+/* Repostories */
+
+/* var connection = new SqlConnection(connectionString);
+connection.Open();
+
+var userRepository = new Repository<Users>(connection);
+var newUser = new Users
+{
+    Name = "Gégé",
+    Password = "gégé",
+    FirstName = "rare"
+};
+var newId = userRepository.Insert(newUser);   */
+
+// Get by Id
+// var user = userRepository.GetById(newId);
+
+// Update (non encore implémenté)
+/* user.Name = "Alice Updated";
+userRepository.Update(user); */
+
+// Get all
+// var allUsers = userRepository.GetAll();
+
+// Delete
+// userRepository.Delete(newId); */
+
+
+/* Optimisation du QueryBuilder */
+/* var whereClause = ExpressionToSqlTranslator.Translate2<Tickets>(u => u.Status == 3);
+Console.WriteLine(whereClause); */
+
+// Select All
+var connection = new SqlConnection(connectionString);
+
+connection.Open();
+
+var tickets = new Query2<Tickets>(connection)
+                .ToList();
+
+connection.Close();
+
+// Avec where
+connection.Open();
+
+var ticketsWithWhere = new Query2<Tickets>(connection)
+                .Where(u => u.Status < 3)
+                .ToList();
+
+connection.Close();
+
+
+// Avec order by
+connection.Open();
+var users = new Query2<Tickets>(connection)
+                .OrderBy(u => u.Id)
+                .ToList();
+
+connection.Close();
+
+// SKIP/TAKE
+connection.Open();
+
+var ticketsSkip = new Query2<Tickets>(connection)
+                .Skip(10)
+                .Take(20)
+                .ToList();
+
+connection.Close();

@@ -94,5 +94,65 @@ public static class ExpressionToSqlTranslator
             return getter();
         }
     }
+
+
+    public static string Translate2<T>(Expression<Func<T, bool>> expression)
+    {
+        var sb = new StringBuilder();
+        VisitExpression(expression.Body, sb);
+        return sb.ToString();
+    }
+
+    private static void VisitExpression(Expression expr, StringBuilder sb)
+    {
+        if(expr is BinaryExpression binary)
+        {
+            sb.Append("(");
+            VisitExpression(binary.Left, sb);
+
+            switch(binary.NodeType)
+            {
+                case ExpressionType.Equal:
+                    sb.Append(" = ");
+                    break;
+                case ExpressionType.AndAlso:
+                    sb.Append(" AND ");
+                    break;
+                case ExpressionType.OrElse:
+                    sb.Append(" OR ");
+                    break;
+                case ExpressionType.GreaterThan:
+                    sb.Append(" > ");
+                    break;
+                case ExpressionType.LessThan:
+                    sb.Append(" < ");
+                    break;
+                case ExpressionType.GreaterThanOrEqual:
+                    sb.Append(" >= ");
+                    break;
+                case ExpressionType.LessThanOrEqual:
+                    sb.Append(" <= ");
+                    break;
+                default:
+                    throw new NotSupportedException(binary.NodeType.ToString());
+            }
+
+            VisitExpression(binary.Right, sb);
+            sb.Append(")");
+        }
+        else if(expr is MemberExpression member)
+        {
+            sb.Append(member.Member.Name);
+        }
+        else if(expr is ConstantExpression constant)
+        {
+            if(constant.Value is string)
+                sb.Append($"'{constant.Value}'");
+            else if(constant.Value == null)
+                sb.Append("NULL");
+            else
+                sb.Append(constant.Value);
+        }
+    }
 }
 

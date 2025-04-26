@@ -1,4 +1,7 @@
-﻿using System.Linq.Expressions;
+﻿using Microsoft.Data.SqlClient;
+using SQLBuilder.Entities;
+using System.Linq.Expressions;
+using System.Text;
 
 namespace SQLBuilder;
 public class Query<T> where T : new()
@@ -33,6 +36,110 @@ public class Query<T> where T : new()
     public List<T> Execute(TransactionManager transaction)
     {
         return SqlExecutor.Query<T>(transaction, _builder);
+    }
+}
+
+
+public class Query2<T> where T : class, new()
+{
+    private readonly SqlConnection _connection;
+    private readonly StringBuilder _whereBuilder = new();
+    private readonly StringBuilder _orderByBuilder = new();
+    private int? _skip;
+    private int? _take;
+
+    public Query2(SqlConnection connection)
+    {
+        _connection = connection;
+    }
+
+    public Query2<T> Where(Expression<Func<T, bool>> predicate)
+    {
+        if(_whereBuilder.Length > 0)
+            _whereBuilder.Append(" AND ");
+
+        _whereBuilder.Append(ExpressionToSqlTranslator.Translate2(predicate));
+        return this;
+    }
+
+    public Query2<T> OrderBy(Expression<Func<T, object>> keySelector)
+    {
+        if(_orderByBuilder.Length > 0)
+            _orderByBuilder.Append(", ");
+
+        _orderByBuilder.Append(GetMemberName(keySelector));
+        return this;
+    }
+
+    public Query2<T> Skip(int count)
+    {
+        _skip = count;
+        return this;
+    }
+
+    public Query2<T> Take(int count)
+    {
+        _take = count;
+        return this;
+    }
+
+    public List<T> ToList()
+    {
+        var sql = BuildSql();
+
+        using var cmd = new SqlCommand(sql, _connection);
+        using var reader = cmd.ExecuteReader();
+
+        return SimpleMapper.MapToList<T>(reader);
+    }
+
+    private string BuildSql()
+    {
+        var tableName = typeof(T).Name;
+        var sb = new StringBuilder();
+        sb.Append($"SELECT * FROM {tableName}");
+
+        if(_whereBuilder.Length > 0)
+        {
+            sb.Append(" WHERE ");
+            sb.Append(_whereBuilder);
+        }
+
+        if(_orderByBuilder.Length > 0)
+        {
+            sb.Append(" ORDER BY ");
+            sb.Append(_orderByBuilder);
+        }
+        else if(_skip.HasValue || _take.HasValue)
+        {
+            sb.Append(" ORDER BY (SELECT NULL)"); // Obligation SQL Server OFFSET nécessite ORDER BY
+        }
+
+        if(_skip.HasValue || _take.HasValue)
+        {
+            sb.Append($" OFFSET {_skip.GetValueOrDefault(0)} ROWS");
+            if(_take.HasValue)
+            {
+                sb.Append($" FETCH NEXT {_take.Value} ROWS ONLY");
+            }
+        }
+
+        return sb.ToString();
+    }
+
+    private static string GetMemberName(Expression<Func<T, object>> expression)
+    {
+        if(expression.Body is UnaryExpression unary)
+        {
+            if(unary.Operand is MemberExpression member)
+                return member.Member.Name;
+        }
+        else if(expression.Body is MemberExpression member)
+        {
+            return member.Member.Name;
+        }
+
+        throw new InvalidOperationException("Invalid expression format for OrderBy");
     }
 }
 
