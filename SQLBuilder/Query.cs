@@ -4,6 +4,8 @@ using System.Linq.Expressions;
 using System.Text;
 
 namespace SQLBuilder;
+
+// Partie Dapper (SQL Minimaliste)
 public class Query<T> where T : new()
 {
     private SqlBuilder _builder = new();
@@ -40,13 +42,17 @@ public class Query<T> where T : new()
 }
 
 
+// Partie "ORM"
 public class Query2<T> where T : class, new()
 {
     private readonly SqlConnection _connection;
     private readonly StringBuilder _whereBuilder = new();
     private readonly StringBuilder _orderByBuilder = new();
+    private readonly StringBuilder _joinBuilder = new();
     private int? _skip;
     private int? _take;
+    private readonly List<Type> _joinedTypes = new();
+
 
     public Query2(SqlConnection connection)
     {
@@ -62,12 +68,36 @@ public class Query2<T> where T : class, new()
         return this;
     }
 
+
+    public Query2<T> Where<TJoin>(Expression<Func<T, TJoin, bool>> predicate)
+    {
+        if(_whereBuilder.Length > 0)
+            _whereBuilder.Append(" AND ");
+
+        _whereBuilder.Append(ExpressionToSqlTranslator.Translate2(predicate));
+        return this;
+    }
+
     public Query2<T> OrderBy(Expression<Func<T, object>> keySelector)
     {
         if(_orderByBuilder.Length > 0)
             _orderByBuilder.Append(", ");
 
         _orderByBuilder.Append(GetMemberName(keySelector));
+        return this;
+    }
+
+    public Query2<T> Join<TJoin>(Expression<Func<T, TJoin, bool>> on)
+    {
+        var joinTable = typeof(TJoin).Name;
+        if(_joinedTypes.Contains(typeof(TJoin)))
+            throw new InvalidOperationException($"Already joined {joinTable}.");
+
+        _joinedTypes.Add(typeof(TJoin));
+
+        var onClause = ExpressionToSqlTranslator.Translate(on);
+
+        _joinBuilder.Append($" INNER JOIN {joinTable} ON {onClause}");
         return this;
     }
 
@@ -98,6 +128,11 @@ public class Query2<T> where T : class, new()
         var tableName = typeof(T).Name;
         var sb = new StringBuilder();
         sb.Append($"SELECT * FROM {tableName}");
+
+        if(_joinBuilder.Length > 0)
+        {
+            sb.Append(_joinBuilder);
+        }
 
         if(_whereBuilder.Length > 0)
         {
@@ -141,5 +176,7 @@ public class Query2<T> where T : class, new()
 
         throw new InvalidOperationException("Invalid expression format for OrderBy");
     }
+
+
 }
 

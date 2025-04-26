@@ -1,4 +1,6 @@
-﻿// CRUD Mais probléme, elles n'utilise pas la même connections.
+﻿// Deux partie, SQLBuilder et Orm
+
+// CRUD Mais probléme, elles n'utilise pas la même connections.
 
 using Microsoft.Data.SqlClient;
 using SQLBuilder;
@@ -201,19 +203,37 @@ connection.Close();
 
 
 // Avec order by
-connection.Open();
+/* connection.Open();
 var users = new Query2<Tickets>(connection)
                 .OrderBy(u => u.Id)
                 .ToList();
 
-connection.Close();
+connection.Close(); */
 
 // SKIP/TAKE
-connection.Open();
+/* connection.Open();
 
 var ticketsSkip = new Query2<Tickets>(connection)
                 .Skip(10)
                 .Take(20)
                 .ToList();
 
+connection.Close();  */
+
+
+// Les JOINs
+
+// var connection = new SqlConnection(connectionString);
+
+// connection.Open();
+
+/* var query = new Query2<Users>(connection)
+    .Join<Tickets>((user, ticket) => user.Id == ticket.UserId)
+    .Where<Tickets>((user, order) => order.State == 2)
+    .OrderBy(user => user.Name)
+    .ToList();
+
 connection.Close();
+
+
+Console.WriteLine(query); */

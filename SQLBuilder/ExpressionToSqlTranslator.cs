@@ -11,6 +11,13 @@ public static class ExpressionToSqlTranslator
         return (visitor.Sql, visitor.Parameters);
     }
 
+    public static string Translate<T, TJoin>(Expression<Func<T, TJoin, bool>> expression)
+    {
+        var visitor = new SqlExpressionVisitor();
+        visitor.Visit(expression.Body);
+        return visitor.Sql;
+    }
+
     private class SqlExpressionVisitor : ExpressionVisitor
     {
         private StringBuilder _sql = new();
@@ -95,6 +102,13 @@ public static class ExpressionToSqlTranslator
         }
     }
 
+
+    public static string Translate2<T, TJoin>(Expression<Func<T, TJoin, bool>> expression)
+    {
+        var sb = new StringBuilder();
+        VisitExpression(expression.Body, sb);
+        return sb.ToString();
+    }
 
     public static string Translate2<T>(Expression<Func<T, bool>> expression)
     {
