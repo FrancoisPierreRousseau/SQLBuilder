@@ -5,9 +5,7 @@ using LinqToSQL.Query.Extensions;
 
 
 /**
- * Jointure
- * Restriction : si une jointure est déjà présente dans la requête, alors on génère une exception.
- * 
+ * Select 
  */
 
 // "SELECT * FROM Tickets"
