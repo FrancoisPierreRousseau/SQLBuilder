@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using LinqToSQL.Traduction;
+using System.Linq.Expressions;
 
 namespace LinqToSQL.Query.Extensions;
 public static class OrderByExtension
@@ -8,7 +9,9 @@ public static class OrderByExtension
         if(query._orderByBuilder.Length > 0)
             query._orderByBuilder.Append(", ");
 
-        query._orderByBuilder.Append(Query<T>.GetMemberName(keySelector.Body));
+        var columns = new ColumnExtractor().Extract(keySelector.Body);
+
+        query._orderByBuilder.Append(string.Join(", ", columns));
         return query;
     }
 
@@ -19,7 +22,9 @@ public static class OrderByExtension
         if(query._orderByBuilder.Length > 0)
             query._orderByBuilder.Append(", ");
 
-        query._orderByBuilder.Append(Query<T1>.GetMemberName(keySelector.Body));
+        var columns = new ColumnExtractor().Extract(keySelector.Body);
+
+        query._orderByBuilder.Append(string.Join(", ", columns));
         return query;
     }
 
@@ -30,7 +35,9 @@ public static class OrderByExtension
         if(query._orderByBuilder.Length > 0)
             query._orderByBuilder.Append(", ");
 
-        query._orderByBuilder.Append(Query<T1>.GetMemberName(keySelector.Body));
+        var columns = new ColumnExtractor().Extract(keySelector.Body);
+
+        query._orderByBuilder.Append(string.Join(", ", columns));
         return query;
     }
 
@@ -41,7 +48,9 @@ public static class OrderByExtension
         if(query._orderByBuilder.Length > 0)
             query._orderByBuilder.Append(", ");
 
-        query._orderByBuilder.Append(Query<T1>.GetMemberName(keySelector.Body));
+        var columns = new ColumnExtractor().Extract(keySelector.Body);
+
+        query._orderByBuilder.Append(string.Join(", ", columns));
         return query;
     }
 }

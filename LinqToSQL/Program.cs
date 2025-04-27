@@ -63,15 +63,27 @@ var filtre = new Query<Users>()
 
 /*
  * Trie 
- * SELECT * FROM Users WHERE (((Users.Id > 2) AND (Users.AgencyId > 4)) OR (Users.AgencyId > 5)) ORDER BY Users.Name, FollowUpSheets.Comment
+ * SELECT * FROM Users WHERE (((Users.Id > 2) AND (Users.AgencyId > 4)) OR (Users.AgencyId > 5)) ORDER BY Users.Name, FollowUpSheets.Comment, Users.Name, Tickets.CreateAt
  * Peut être à revoir :  (Users, FollowUpSheets)  => Users.Id, FollowUpSheets.Name...
  */
 
 var sorted = new Query<Users>()
                     .Where(Users => (Users.Id > 2 && Users.AgencyId > 4) || Users.AgencyId > 5)
                     .OrderBy(Users => Users.Name)
-                    .OrderBy<Users, FollowUpSheets>((Users, FollowUpSheets) => FollowUpSheets.Comment)
+                    .OrderBy<Users, FollowUpSheets, Tickets, Users>((Users, FollowUpSheets, Tickets, Users2) => new { FollowUpSheets.Comment, Users.Name, Tickets.CreateAt })
                     .ToList();
 
 
-Console.WriteLine(sorted);
+
+/*
+ * Pagination
+ * SELECT * FROM Tickets ORDER BY (SELECT NULL) OFFSET 10 ROWS FETCH NEXT 20 ROWS ONLY
+ */
+
+var paginaded = new Query<Tickets>()
+                .Skip(10)
+                .Take(20)
+                .ToList();
+
+Console.WriteLine(paginaded);
+
