@@ -54,8 +54,10 @@ var rightJoin = new Query<Users>()
  */
 
 var filtre = new Query<Users>()
-               .Where(user => (user.Id > 2 && user.AgencyId > 4) || user.AgencyId > 5)
-               .Where<Users, FollowUpSheets>()
+               .Where(Users => (Users.Id > 2 && Users.AgencyId > 4) || Users.AgencyId > 5)
+               .Where<Users, FollowUpSheets>((Users, FollowUpSheets) => FollowUpSheets.TicketId > 10)
+               .Where<Users, FollowUpSheets, Tickets>((Users, FollowUpSheets, Tickets) => Tickets.Origin > 10 && Tickets.Status != 100)
+               .Where<Users, FollowUpSheets, Tickets, FollowUpSheets>((Users, FollowUpSheets, Tickets, FollowUpSheets2) => FollowUpSheets2.TicketId > 100)
                .ToList();
 
 Console.WriteLine(filtre);

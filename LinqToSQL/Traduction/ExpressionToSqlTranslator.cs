@@ -140,6 +140,20 @@ public static class ExpressionToSqlTranslator
         }
     }
 
+    public static string Translate2<T1>(Expression<Func<T1, bool>> expression)
+    {
+        var sb = new StringBuilder();
+        VisitExpression(expression.Body, sb);
+        return sb.ToString();
+    }
+
+    public static string Translate2<T1, T2>(Expression<Func<T1, T2, bool>> expression)
+    {
+        var sb = new StringBuilder();
+        VisitExpression(expression.Body, sb);
+        return sb.ToString();
+    }
+
     public static string Translate2<T1, T2, T3>(Expression<Func<T1, T2, T3, bool>> expression)
     {
         var sb = new StringBuilder();
@@ -147,14 +161,7 @@ public static class ExpressionToSqlTranslator
         return sb.ToString();
     }
 
-    public static string Translate2<T, TJoin>(Expression<Func<T, TJoin, bool>> expression)
-    {
-        var sb = new StringBuilder();
-        VisitExpression(expression.Body, sb);
-        return sb.ToString();
-    }
-
-    public static string Translate2<T>(Expression<Func<T, bool>> expression)
+    public static string Translate2<T1, T2, T3, T4>(Expression<Func<T1, T2, T3, T4, bool>> expression)
     {
         var sb = new StringBuilder();
         VisitExpression(expression.Body, sb);
