@@ -91,15 +91,6 @@ public class Query<T> where T : class, new()
     }
 
 
-    public Query<T> OrderBy(Expression<Func<T, object>> keySelector)
-    {
-        if(_orderByBuilder.Length > 0)
-            _orderByBuilder.Append(", ");
-
-        _orderByBuilder.Append(GetMemberName(keySelector));
-        return this;
-    }
-
     public Query<T> GroupBy(Expression<Func<T, object>> groupByExpression)
     {
         var columns = new ColumnExtractor().Extract(groupByExpression.Body);
@@ -226,19 +217,37 @@ public class Query<T> where T : class, new()
         return sb.ToString();
     }
 
-    private static string GetMemberName(Expression<Func<T, object>> expression)
+    public static string GetMemberName(Expression expression)
     {
-        if(expression.Body is UnaryExpression unary)
+        var current = expression;
+
+        // Déplie un UnaryExpression (ex: cast implicite vers object)
+        if(current is UnaryExpression unaryExpression && unaryExpression.NodeType == ExpressionType.Convert)
         {
-            if(unary.Operand is MemberExpression member)
-                return member.Member.Name;
-        }
-        else if(expression.Body is MemberExpression member)
-        {
-            return member.Member.Name;
+            current = unaryExpression.Operand;
         }
 
-        throw new InvalidOperationException("Invalid expression format for OrderBy");
+        var members = new Stack<string>();
+
+        while(current != null)
+        {
+            if(current is MemberExpression memberExpression)
+            {
+                members.Push(memberExpression.Member.Name);
+                current = memberExpression.Expression;
+            }
+            else if(current is ParameterExpression parameterExpression)
+            {
+                members.Push(parameterExpression.Name ?? "x"); // fallback "x" si jamais pas de nom
+                break;
+            }
+            else
+            {
+                throw new InvalidOperationException($"Unsupported expression: {current.NodeType}");
+            }
+        }
+
+        return string.Join(".", members);
     }
 }
 

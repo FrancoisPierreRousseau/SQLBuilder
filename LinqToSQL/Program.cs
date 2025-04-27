@@ -51,6 +51,7 @@ var rightJoin = new Query<Users>()
 
 /*
  * Filtre 
+ * SELECT * FROM Users WHERE (((Users.Id > 2) AND (Users.AgencyId > 4)) OR (Users.AgencyId > 5)) AND (FollowUpSheets.TicketId > 10) AND ((Tickets.Origin > 10) AND (Tickets.Status <> 100)) AND (FollowUpSheets2.TicketId > 100)
  */
 
 var filtre = new Query<Users>()
@@ -60,4 +61,17 @@ var filtre = new Query<Users>()
                .Where<Users, FollowUpSheets, Tickets, FollowUpSheets>((Users, FollowUpSheets, Tickets, FollowUpSheets2) => FollowUpSheets2.TicketId > 100)
                .ToList();
 
-Console.WriteLine(filtre);
+/*
+ * Trie 
+ * SELECT * FROM Users WHERE (((Users.Id > 2) AND (Users.AgencyId > 4)) OR (Users.AgencyId > 5)) ORDER BY Users.Name, FollowUpSheets.Comment
+ * Peut être à revoir :  (Users, FollowUpSheets)  => Users.Id, FollowUpSheets.Name...
+ */
+
+var sorted = new Query<Users>()
+                    .Where(Users => (Users.Id > 2 && Users.AgencyId > 4) || Users.AgencyId > 5)
+                    .OrderBy(Users => Users.Name)
+                    .OrderBy<Users, FollowUpSheets>((Users, FollowUpSheets) => FollowUpSheets.Comment)
+                    .ToList();
+
+
+Console.WriteLine(sorted);
