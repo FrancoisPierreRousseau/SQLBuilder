@@ -18,6 +18,15 @@ public static class ExpressionToSqlTranslator
         return visitor.Sql;
     }
 
+
+    public static string Translate<T1, T2, T3>(Expression<Func<T1, T2, T3, bool>> expression)
+    {
+        var visitor = new SqlExpressionVisitor();
+        visitor.Visit(expression.Body);
+        return visitor.Sql;
+    }
+
+
     private class SqlExpressionVisitor : ExpressionVisitor
     {
         private StringBuilder _sql = new();
@@ -69,9 +78,10 @@ public static class ExpressionToSqlTranslator
 
         protected override Expression VisitMember(MemberExpression node)
         {
-            if(node.Expression != null && node.Expression.NodeType == ExpressionType.Parameter)
+            if(node.Expression is ParameterExpression paramExpr)
             {
-                _sql.Append(node.Member.Name);
+                // Utilise le nom du paramètre (ex: "u", "o") comme préfixe
+                _sql.Append($"{paramExpr.Name}.{node.Member.Name}");
                 return node;
             }
 
@@ -102,6 +112,12 @@ public static class ExpressionToSqlTranslator
         }
     }
 
+    public static string Translate2<T1, T2, T3>(Expression<Func<T1, T2, T3, bool>> expression)
+    {
+        var sb = new StringBuilder();
+        VisitExpression(expression.Body, sb);
+        return sb.ToString();
+    }
 
     public static string Translate2<T, TJoin>(Expression<Func<T, TJoin, bool>> expression)
     {
@@ -121,6 +137,16 @@ public static class ExpressionToSqlTranslator
     {
         if(expr is BinaryExpression binary)
         {
+            // Cas particulier : comparaison à null
+            if(IsNullConstant(binary.Right) || IsNullConstant(binary.Left))
+            {
+                var memberExpr = binary.Left is MemberExpression ? binary.Left : binary.Right;
+                var isNot = binary.NodeType == ExpressionType.NotEqual;
+                VisitExpression(memberExpr, sb);
+                sb.Append(isNot ? " IS NOT NULL" : " IS NULL");
+                return;
+            }
+
             sb.Append("(");
             VisitExpression(binary.Left, sb);
 
@@ -128,6 +154,9 @@ public static class ExpressionToSqlTranslator
             {
                 case ExpressionType.Equal:
                     sb.Append(" = ");
+                    break;
+                case ExpressionType.NotEqual:
+                    sb.Append(" <> ");
                     break;
                 case ExpressionType.AndAlso:
                     sb.Append(" AND ");
@@ -156,7 +185,10 @@ public static class ExpressionToSqlTranslator
         }
         else if(expr is MemberExpression member)
         {
-            sb.Append(member.Member.Name);
+            if(member.Expression is ParameterExpression paramExpr)
+                sb.Append($"{paramExpr.Name}.{member.Member.Name}");
+            else
+                sb.Append(member.Member.Name);
         }
         else if(expr is ConstantExpression constant)
         {
@@ -167,6 +199,20 @@ public static class ExpressionToSqlTranslator
             else
                 sb.Append(constant.Value);
         }
+        // *** Ajoute ceci pour gérer les conversions ***
+        else if(expr is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+        {
+            VisitExpression(unary.Operand, sb);
+        }
+        else
+        {
+            throw new NotSupportedException(expr.GetType().Name);
+        }
+    }
+
+    private static bool IsNullConstant(Expression expr)
+    {
+        return expr is ConstantExpression c && c.Value == null;
     }
 }
 

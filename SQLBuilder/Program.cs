@@ -196,21 +196,23 @@ Console.WriteLine(whereClause); */
 // Select All
 var connection = new SqlConnection(connectionString);
 
-connection.Open();
+/* connection.Open();
+
 
 var tickets = new Query2<Tickets>(connection)
+                .Select(ticket => new { ticket.Origin, ticket.State, ticket.Status })
                 .ToList();
 
-connection.Close();
+connection.Close(); */
 
 // Avec where
-connection.Open();
+/* connection.Open();
 
 var ticketsWithWhere = new Query2<Tickets>(connection)
                 .Where(u => u.Status < 3)
                 .ToList();
 
-connection.Close();
+connection.Close(); */
 
 
 // Avec order by
@@ -232,21 +234,58 @@ var ticketsSkip = new Query2<Tickets>(connection)
 connection.Close();  */
 
 
-// Les JOINs 
+// Les JOINs (concernant les clause where, pas possible au delà de 2 types)
 
 // Fonctionnel mais géré les ambuigiité au niveaua des colonnes
 
 // var connection = new SqlConnection(connectionString);
 
-// connection.Open();
+/* connection.Open();
 
-/* var query = new Query2<Users>(connection)
-    .Join<Tickets>((user, ticket) => user.Id == ticket.UserId)
-    .Where<Tickets>((user, order) => order.State == 2)
-    .OrderBy(user => user.Name)
-    .ToList();
+var query = new Query2<Users>(connection)
+   .Where(user => user.Id > 2)
+   .Join<Tickets>((user, ticket) => user.Id == ticket.UserId)
+   .Where((user, order) => order.State == 3)
+   .OrderBy(user => user.Name)
+   .ToList();
 
 connection.Close();
 
 
 Console.WriteLine(query); */
+
+/* var query = new Query2<Users>(connection)
+    .LeftJoin<Tickets>((user, ticket) => user.Id == ticket.UserId)
+    .Where((user, order) => order.State == 3)
+    .OrderBy(user => user.Name)
+    .ToList(); */
+
+
+/* var query = new Query2<Users>(connection)
+    .RightJoin<Tickets>((user, ticket) => user.Id == ticket.UserId)
+    .Where((user, order) => order.State == 3)
+    .OrderBy(user => user.Name)
+    .ToList(); */
+
+
+// Multi Jointure !
+
+
+
+/* var query = new Query2<Users>(connection)
+    .Join<Tickets>((user, ticket) => user.Id == ticket.UserId)
+    .LeftJoin<FollowUpSheets>((ticket, follow) => ticket.Id == follow.TicketId)
+    .Where((user, follow) => follow.TicketId > 100)
+    .OrderBy(user => user.Name)
+    .ToList(); */
+
+
+var query = new Query2<Users>(connection)
+    .Join<Tickets>((user, ticket) => user.Id == ticket.UserId)
+    .LeftJoin<FollowUpSheets>((ticket, follow) => ticket.Id == follow.TicketId)
+    .Select((user, ticket) => new { AliasId = user.Id, AliasComment = ticket.Comment })
+    .Where((user, follow) => follow.TicketId > 100)
+    .OrderBy(user => user.Name)
+    .ToList();
+
+
