@@ -64,12 +64,12 @@ var filtre = new Query<Users>()
 /*
  * Trie 
  * SELECT * FROM Users WHERE (((Users.Id > 2) AND (Users.AgencyId > 4)) OR (Users.AgencyId > 5)) ORDER BY Users.Name, FollowUpSheets.Comment, Users.Name, Tickets.CreateAt
- * Peut être à revoir :  (Users, FollowUpSheets)  => Users.Id, FollowUpSheets.Name...
+ * Options : True => ASC, False => DESC
  */
 
 var sorted = new Query<Users>()
                     .Where(Users => (Users.Id > 2 && Users.AgencyId > 4) || Users.AgencyId > 5)
-                    .OrderBy(Users => Users.Name)
+                    .OrderBy(Users => Users.Name, false)
                     .OrderBy<Users, FollowUpSheets, Tickets, Users>((Users, FollowUpSheets, Tickets, Users2) => new { FollowUpSheets.Comment, Users.Name, Tickets.CreateAt })
                     .ToList();
 
