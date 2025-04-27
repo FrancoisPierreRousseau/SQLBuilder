@@ -2,6 +2,22 @@
 
 **LinqToSQL** est une bibliothèque permettant de générer des requêtes SQL à partir d'expressions LINQ en C#. Elle facilite la construction dynamique de requêtes SQL à l'aide de classes et d'extensions, notamment pour les opérations de **SELECT**, **JOIN**, **WHERE** et **INSERT**.
 
+
+### Explication de l'utilisation de la réflexion
+
+Dans ce projet, **la réflexion** est utilisée de manière ciblée pour accéder et manipuler dynamiquement les objets existants, tels que les entités et leurs propriétés, sans créer de nouveaux objets ou chaînes de caractères à chaque étape. Cela permet de générer des requêtes SQL de manière flexible tout en réutilisant les objets en mémoire, ce qui minimise les allocations inutiles. Bien que l'utilisation de la réflexion introduise un coût de performance, ce dernier est limité et n'occasionne pas une surcharge significative dans le cadre de ce projet.
+
+---
+
+### Comment la réflexion est utilisée
+
+La réflexion dans **LinqToSQL** est utilisée pour inspecter les objets et leurs membres afin de construire dynamiquement les requêtes SQL sans avoir à créer de nouveaux objets ou chaînes à chaque manipulation. Cela permet de :
+- Accéder aux propriétés d'objets dynamiquement.
+- Créer des conditions, des jointures et des expressions SQL à partir des types d'objets existants.
+- Réutiliser des objets existants pour générer le SQL, réduisant ainsi les allocations mémoire et améliorant l'efficacité.
+
+Cela permet une grande flexibilité dans la génération de SQL, tout en évitant des surcharges de mémoire dues à la création d'objets supplémentaires.
+
 ## Fonctionnalités
 
 - **Construction de requêtes SQL** : Créez des requêtes SQL avec des expressions LINQ.
