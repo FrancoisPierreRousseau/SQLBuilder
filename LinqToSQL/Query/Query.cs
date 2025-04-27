@@ -91,15 +91,6 @@ public class Query<T> where T : class, new()
     }
 
 
-    public Query<T> Where(Expression<Func<T, bool>> predicate)
-    {
-        if(_whereBuilder.Length > 0)
-            _whereBuilder.Append(" AND ");
-
-        _whereBuilder.Append(ExpressionToSqlTranslator.Translate2(predicate));
-        return this;
-    }
-
     public Query<T> OrderBy(Expression<Func<T, object>> keySelector)
     {
         if(_orderByBuilder.Length > 0)

@@ -48,5 +48,14 @@ var rightJoin = new Query<Users>()
                 .RightJoin<Users, Tickets, Users, FollowUpSheets>((Users, Tickets, Users2, FollowUpSheets) => FollowUpSheets.TicketId == Tickets.Id)
                 .ToList();
 
-Console.WriteLine(join);
 
+/*
+ * Filtre 
+ */
+
+var filtre = new Query<Users>()
+               .Where(user => (user.Id > 2 && user.AgencyId > 4) || user.AgencyId > 5)
+               .Where<Users, FollowUpSheets>()
+               .ToList();
+
+Console.WriteLine(filtre);
