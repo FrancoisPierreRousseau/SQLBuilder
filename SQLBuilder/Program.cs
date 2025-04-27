@@ -7,6 +7,8 @@
 // CRUD Mais probléme, elles n'utilise pas la même connections.
 
 using Microsoft.Data.SqlClient;
+using SQLBuilder;
+using SQLBuilder.Entities;
 
 var connectionString = "Server=(local);Database=Callfollower;Trusted_Connection=True;Encrypt=True;TrustServerCertificate=True;";
 
@@ -289,7 +291,7 @@ Console.WriteLine(query); */
     .ToList(); */
 
 
-/* var newUser = new Users
+var newUser = new Users
 {
     Name = "Gégé",
     Password = "gégé",
@@ -306,6 +308,39 @@ query
 query.Commit();
 
 
-var users = query.ToList(); */
+var sss = query.ToList();
 
 
+/* var query = new Query2<Users>(connection);
+
+var user = new Users { Name = "Name update", Password = "Password Update" };
+
+new Query2<Users>(connection)
+    .BeginTransaction()
+    .Update(user, Users => Users.Id == 4)
+    .Commit();
+
+var users = query.ToList(); 
+
+Console.WriteLine(users.Count); */
+
+
+/* var prevUsers = query.ToList();
+
+
+var users = new List<Users>
+{
+    new() { Name = "Gégé", Password = "gégé", FirstName = "rare" },
+    new() { Name = "Gégé", Password = "gégé", FirstName = "rare" },
+    new() { Name = "Gégé", Password = "gégé", FirstName = "rare" }
+};
+
+new Query2<Users>(connection)
+    .BeginTransaction()
+    .InsertMany(users);  // Insertion en masse
+
+var newUsers = query.ToList();
+
+query.Commit();
+
+Console.WriteLine(newUsers); */

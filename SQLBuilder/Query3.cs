@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using SQLBuilder.Attributs;
 using SQLBuilder.Entities;
+using System.Data.Common;
 using System.Linq.Expressions;
 using System.Text;
 
@@ -65,7 +66,11 @@ public class Query2<T> where T : class, new()
     public Query2(SqlConnection connection)
     {
         _connection = connection;
-        _connection.Open();
+
+        if(_connection.State == System.Data.ConnectionState.Closed)
+        {
+            _connection.Open();
+        }
     }
 
     public Query2<T> BeginTransaction()
@@ -87,7 +92,7 @@ public class Query2<T> where T : class, new()
     }
 
 
-    public Query2<T> Update(T entity, Expression<Func<T, bool>> predicate)
+    public void InsertMany(List<T> entities)
     {
         var type = typeof(T);
         var tableName = type.Name;
@@ -95,24 +100,88 @@ public class Query2<T> where T : class, new()
             .Where(p => p.CanRead && !Attribute.IsDefined(p, typeof(IgnoreInsertAttribute)))
             .ToList();
 
-        var setClauses = properties.Select(p => $"{p.Name} = @{p.Name}").ToList();
+        var columnNames = properties.Select(p => p.Name).ToList();
+        var valuePlaceholders = new List<string>();
 
+        using var command = _connection.CreateCommand();
+        command.CommandText = $"INSERT INTO {tableName} ({string.Join(", ", columnNames)}) VALUES ";
+
+        var allParameters = new List<DbParameter>(); // Liste pour les paramètres
+
+        // Construction des valeurs des entités
+        foreach(var entity in entities)
+        {
+            var paramNames = properties.Select(p => "@" + p.Name + "_" + entities.IndexOf(entity)).ToList(); // Paramètres uniques
+            valuePlaceholders.Add($"({string.Join(", ", paramNames)})");
+
+            foreach(var prop in properties)
+            {
+                var param = command.CreateParameter();
+                param.ParameterName = "@" + prop.Name + "_" + entities.IndexOf(entity); // Paramètre unique pour chaque entité
+                param.Value = prop.GetValue(entity) ?? DBNull.Value;
+                allParameters.Add(param); // Ajouter à la liste des paramètres
+            }
+        }
+
+        // Ajouter tous les paramètres à la commande en une seule fois
+        foreach(var param in allParameters)
+        {
+            command.Parameters.Add(param);
+        }
+
+        // Associer la transaction en cours (si elle existe) à la commande
+        if(_transaction != null)
+        {
+            command.Transaction = _transaction;
+        }
+
+        // Exécution de la commande
+        command.CommandText += string.Join(", ", valuePlaceholders);
+
+        command.ExecuteNonQuery(); // Cette commande peut être exécutée avec la transaction
+    }
+
+
+    public Query2<T> Update(T entity, Expression<Func<T, bool>> predicate)
+    {
+        var type = typeof(T);
+        var tableName = type.Name;
+
+        // Récupère les propriétés de l'entité
+        var properties = type.GetProperties()
+            .Where(p => p.CanRead && !Attribute.IsDefined(p, typeof(IgnoreInsertAttribute)))
+            .ToList();
+
+        // Filtrer les propriétés non nulles
+        var setClauses = properties
+            .Where(p => p.GetValue(entity) != null)  // Seulement les propriétés non nulles
+            .Select(p => $"{p.Name} = @{p.Name}")       // Génère les clauses SET
+            .ToList();
+
+        // Construire la condition WHERE
         var whereClause = ExpressionToSqlTranslator.Translate2(predicate);
 
+        // Construire la requête SQL
         var sql = $"UPDATE {tableName} SET {string.Join(", ", setClauses)} WHERE {whereClause}";
 
         using var command = _connection.CreateCommand();
         command.CommandText = sql;
         command.Transaction = _transaction;
 
+        // Ajouter seulement les paramètres non nulls
         foreach(var prop in properties)
         {
-            var param = command.CreateParameter();
-            param.ParameterName = "@" + prop.Name;
-            param.Value = prop.GetValue(entity) ?? DBNull.Value;
-            command.Parameters.Add(param);
+            var value = prop.GetValue(entity);
+            if(value != null)  // Ne pas ajouter les paramètres si la valeur est nulle
+            {
+                var param = command.CreateParameter();
+                param.ParameterName = "@" + prop.Name;
+                param.Value = value;
+                command.Parameters.Add(param);
+            }
         }
 
+        // Exécuter la commande
         command.ExecuteNonQuery();
 
         return this;
