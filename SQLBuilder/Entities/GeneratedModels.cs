@@ -1,3 +1,5 @@
+using SQLBuilder.Attributs;
+
 namespace SQLBuilder.Entities;
 
 public class __EFMigrationsHistory
@@ -21,6 +23,7 @@ public class Agencies
 
 public class Users
 {
+    [IgnoreInsert]
     public int Id { get; set; }
     public int? AgencyId { get; set; }
     public string Name { get; set; }

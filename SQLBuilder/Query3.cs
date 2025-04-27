@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.SqlClient;
+using SQLBuilder.Attributs;
 using SQLBuilder.Entities;
 using System.Linq.Expressions;
 using System.Text;
@@ -52,6 +53,8 @@ public class Query2<T> where T : class, new()
     public StringBuilder _selectBuilder = new();
     public StringBuilder _groupByBuilder = new();
     public StringBuilder _havingBuilder = new();
+    private SqlTransaction? _transaction;
+
 
 
     public int? _skip;
@@ -62,8 +65,87 @@ public class Query2<T> where T : class, new()
     public Query2(SqlConnection connection)
     {
         _connection = connection;
+        _connection.Open();
     }
 
+    public Query2<T> BeginTransaction()
+    {
+        _transaction = _connection.BeginTransaction();
+        return this;
+    }
+
+    public void Commit()
+    {
+        _transaction?.Commit();
+        _transaction = null;
+    }
+
+    public void Rollback()
+    {
+        _transaction?.Rollback();
+        _transaction = null;
+    }
+
+
+    public Query2<T> Update(T entity, Expression<Func<T, bool>> predicate)
+    {
+        var type = typeof(T);
+        var tableName = type.Name;
+        var properties = type.GetProperties()
+            .Where(p => p.CanRead && !Attribute.IsDefined(p, typeof(IgnoreInsertAttribute)))
+            .ToList();
+
+        var setClauses = properties.Select(p => $"{p.Name} = @{p.Name}").ToList();
+
+        var whereClause = ExpressionToSqlTranslator.Translate2(predicate);
+
+        var sql = $"UPDATE {tableName} SET {string.Join(", ", setClauses)} WHERE {whereClause}";
+
+        using var command = _connection.CreateCommand();
+        command.CommandText = sql;
+        command.Transaction = _transaction;
+
+        foreach(var prop in properties)
+        {
+            var param = command.CreateParameter();
+            param.ParameterName = "@" + prop.Name;
+            param.Value = prop.GetValue(entity) ?? DBNull.Value;
+            command.Parameters.Add(param);
+        }
+
+        command.ExecuteNonQuery();
+
+        return this;
+    }
+
+
+    public void Insert(T entity)
+    {
+        var type = typeof(T);
+        var tableName = type.Name;
+        var properties = type.GetProperties()
+            .Where(p => p.CanRead && !Attribute.IsDefined(p, typeof(IgnoreInsertAttribute))) // On supporte un futur Ignore
+            .ToList();
+
+        var columnNames = properties.Select(p => p.Name).ToList();
+        var paramNames = properties.Select(p => "@" + p.Name).ToList();
+
+        var sql = $"INSERT INTO {tableName} ({string.Join(", ", columnNames)}) VALUES ({string.Join(", ", paramNames)})";
+
+        using var command = _connection.CreateCommand();
+        command.CommandText = sql;
+        command.Transaction = _transaction;
+
+        foreach(var prop in properties)
+        {
+            var param = command.CreateParameter();
+            param.ParameterName = "@" + prop.Name;
+            param.Value = prop.GetValue(entity) ?? DBNull.Value;
+            command.Parameters.Add(param);
+        }
+
+        command.ExecuteNonQuery();
+    }
 
     public Query2<T> Select<TResult>(Expression<Func<T, TResult>> selector)
     {

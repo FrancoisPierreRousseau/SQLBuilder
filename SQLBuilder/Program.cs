@@ -7,8 +7,6 @@
 // CRUD Mais probléme, elles n'utilise pas la même connections.
 
 using Microsoft.Data.SqlClient;
-using SQLBuilder;
-using SQLBuilder.Entities;
 
 var connectionString = "Server=(local);Database=Callfollower;Trusted_Connection=True;Encrypt=True;TrustServerCertificate=True;";
 
@@ -280,7 +278,7 @@ Console.WriteLine(query); */
     .ToList(); */
 
 
-var query = new Query2<Users>(connection)
+/* var query = new Query2<Users>(connection)
     .Join<Tickets>((users, tickets) => users.Id == tickets.UserId)
     .LeftJoin<FollowUpSheets>((tickets, followUpSheets) => tickets.Id == followUpSheets.TicketId)
     .Select((user, ticket) => new { AliasId = user.Id, AliasComment = ticket.Comment, CountMember = SqlFunctions.Count("Users.Id") })
@@ -288,6 +286,26 @@ var query = new Query2<Users>(connection)
     .GroupBy((u, o) => u.Id)
     .Having((u, o) => SqlFunctions.Count("Order.Id") > 5)
     .OrderBy(user => user.Name)
-    .ToList();
+    .ToList(); */
+
+
+/* var newUser = new Users
+{
+    Name = "Gégé",
+    Password = "gégé",
+    FirstName = "rare"
+};
+
+
+var query = new Query2<Users>(connection);
+
+query
+    .BeginTransaction()
+    .Insert(newUser);
+
+query.Commit();
+
+
+var users = query.ToList(); */
 
 
