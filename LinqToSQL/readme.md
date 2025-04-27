@@ -27,6 +27,8 @@ Cela permet une grande flexibilité dans la génération de SQL, tout en évitant de
 - **Filtrage d'insertion** : Marquez les propriétés à ignorer lors des opérations d'insertion avec l'attribut `IgnoreInsert`.
 - **Optimisation mémoire** : Grâce à l'utilisation de la réflexion, ce projet accède directement aux objets et à leurs membres de manière dynamique, réduisant ainsi l'allocation mémoire en réutilisant les objets existants et en évitant la création de nouveaux objets ou chaînes à chaque étape. Cela permet une gestion plus efficace des ressources mémoire tout en préservant une flexibilité maximale.
 - **SQL pur** : Le SQL généré est "pur", ce qui permet une flexibilité accrue. Vous pouvez interagir directement avec les chaînes générées, les adapter et les utiliser selon vos besoins.
+- **Optimisation future : Système de cache** : Une fonctionnalité future envisagée serait l'ajout d'un système de **cache** pour les chaînes SQL générées. Ce cache permettrait de stocker les résultats pré-générés des requêtes et d'éviter de recalculer les informations via la réflexion à chaque nouvelle exécution similaire. Cela permettrait d'améliorer les performances pour des requêtes récurrentes, similaire à ce que fait **Dapper** en mettant en cache les métadonnées des objets et des propriétés.
+
 
 ## Installation
 
