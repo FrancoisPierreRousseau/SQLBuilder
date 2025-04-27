@@ -285,6 +285,8 @@ var query = new Query2<Users>(connection)
     .LeftJoin<FollowUpSheets>((tickets, followUpSheets) => tickets.Id == followUpSheets.TicketId)
     .Select((user, ticket) => new { AliasId = user.Id, AliasComment = ticket.Comment, CountMember = SqlFunctions.Count("Users.Id") })
     .Where((user, follow) => follow.TicketId > 100)
+    .GroupBy((u, o) => u.Id)
+    .Having((u, o) => SqlFunctions.Count("Order.Id") > 5)
     .OrderBy(user => user.Name)
     .ToList();
 

@@ -8,6 +8,15 @@ public class ColumnExtractor : ExpressionVisitor
     private readonly List<string> _columns = new();
     private readonly List<string> _aliases = new();
 
+    private static readonly Dictionary<string, string> SqlFunctionMappings = new()
+    {
+        { "Count", "COUNT" },
+        { "Sum", "SUM" },
+        { "Avg", "AVG" },
+        { "Min", "MIN" },
+        { "Max", "MAX" }
+    };
+
     public List<string> Extract(Expression expression)
     {
         Visit(expression);
@@ -41,13 +50,22 @@ public class ColumnExtractor : ExpressionVisitor
 
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
-        if(node.Method.DeclaringType?.Name == "SqlFunctions" && node.Method.Name == "Count")
+        if(node.Method.DeclaringType?.Name == "SqlFunctions")
         {
-            var argument = node.Arguments[0] as ConstantExpression;
-            var result = node.Method.Invoke(null, [argument.Value]);
-            _columns.Add($"{result}");
-            _aliases.Add(""); // L'alias sera ajouté dans VisitNew
-            return node;
+            if(SqlFunctionMappings.TryGetValue(node.Method.Name, out var sqlFunctionName))
+            {
+                if(node.Arguments[0] is ConstantExpression constExpr && constExpr.Value is string columnName)
+                {
+                    var argument = node.Arguments[0] as ConstantExpression;
+                    _columns.Add($"COUNT({columnName})");
+                    _aliases.Add(""); // L'alias sera ajouté dans VisitNew
+                    return node;
+                }
+                else
+                {
+                    throw new NotSupportedException($"Unsupported argument type for SQL function '{node.Method.Name}'.");
+                }
+            }
         }
         return base.VisitMethodCall(node);
     }

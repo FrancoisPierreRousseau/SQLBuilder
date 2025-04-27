@@ -51,6 +51,7 @@ public class Query2<T> where T : class, new()
     public StringBuilder _joinBuilder = new();
     public StringBuilder _selectBuilder = new();
     public StringBuilder _groupByBuilder = new();
+    public StringBuilder _havingBuilder = new();
 
 
     public int? _skip;
@@ -111,6 +112,12 @@ public class Query2<T> where T : class, new()
         return this;
     }
 
+    public Query2<T> Having(Expression<Func<T, bool>> havingExpression)
+    {
+        var condition = ExpressionToSqlTranslator.Translate2(havingExpression);
+        _havingBuilder.Append(condition);
+        return this;
+    }
 
     public Query3<T, TJoin> Join<TJoin>(Expression<Func<T, TJoin, bool>> on) where TJoin : class, new()
     {
@@ -189,7 +196,11 @@ public class Query2<T> where T : class, new()
         }
 
         if(_groupByBuilder.Length > 0)
+        {
             sb.Append($" GROUP BY {_groupByBuilder}");
+            if(_havingBuilder.Length > 0)
+                sb.Append($" HAVING {_havingBuilder}");
+        }
 
         if(_orderByBuilder.Length > 0)
         {
@@ -246,6 +257,14 @@ public class Query3<T1, T2> : Query2<T1>
         _skip = previous._skip;
         _take = previous._take;
         _joinedTypes = previous._joinedTypes;
+    }
+
+
+    public Query3<T1, T2> Having(Expression<Func<T1, T2, bool>> havingExpression)
+    {
+        var condition = ExpressionToSqlTranslator.Translate2(havingExpression);
+        _havingBuilder.Append(condition);
+        return this;
     }
 
 

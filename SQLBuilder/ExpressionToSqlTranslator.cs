@@ -4,6 +4,15 @@ using System.Text;
 namespace SQLBuilder;
 public static class ExpressionToSqlTranslator
 {
+    private static readonly Dictionary<string, string> SqlFunctionMappings = new()
+    {
+        { "Count", "COUNT" },
+        { "Sum", "SUM" },
+        { "Avg", "AVG" },
+        { "Min", "MIN" },
+        { "Max", "MAX" }
+    };
+
     public static (string Sql, Dictionary<string, object> Parameters) Translate<T>(Expression<Func<T, bool>> expression)
     {
         var visitor = new SqlExpressionVisitor();
@@ -203,6 +212,32 @@ public static class ExpressionToSqlTranslator
         else if(expr is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
         {
             VisitExpression(unary.Operand, sb);
+        }
+        else if(expr is MethodCallExpression methodCall)
+        {
+            if(methodCall.Method.DeclaringType?.Name == "SqlFunctions")
+            {
+                if(SqlFunctionMappings.TryGetValue(methodCall.Method.Name, out var sqlFunctionName))
+                {
+                    sb.Append($"{sqlFunctionName}(");
+
+                    if(methodCall.Arguments[0] is ConstantExpression constExpr && constExpr.Value is string columnName)
+                    {
+                        // Ici on extrait la string SANS GUILLEMETS
+                        sb.Append(columnName);
+                    }
+                    else
+                    {
+                        throw new NotSupportedException($"Unsupported argument type for SQL function '{methodCall.Method.Name}'.");
+                    }
+
+                    sb.Append(")");
+                }
+                else
+                {
+                    throw new NotSupportedException($"SQL function '{methodCall.Method.Name}' not supported.");
+                }
+            }
         }
         else
         {

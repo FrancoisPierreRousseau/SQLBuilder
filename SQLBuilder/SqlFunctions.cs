@@ -1,24 +1,20 @@
 ﻿namespace SQLBuilder;
+
+
 public class SqlFunctions
 {
-    public static string Count(object column)
+    public static int Count(object column)
     {
-        if(column is string col)
-            return $"COUNT({col})";
-        throw new ArgumentException("Invalid column type for COUNT function.");
+        throw new NotSupportedException("This method should only be used in expressions and translated to SQL.");
     }
 
-    public static string Sum(object column)
+    public static int Sum(object column)
     {
-        if(column is string col)
-            return $"SUM({col})";
-        throw new ArgumentException("Invalid column type for SUM function.");
+        throw new NotSupportedException("This method should only be used in expressions and translated to SQL.");
     }
 
-    public static string Avg(object column)
+    public static int Avg(object column)
     {
-        if(column is string col)
-            return $"AVG({col})";
-        throw new ArgumentException("Invalid column type for AVG function.");
+        throw new NotSupportedException("This method should only be used in expressions and translated to SQL.");
     }
 }
