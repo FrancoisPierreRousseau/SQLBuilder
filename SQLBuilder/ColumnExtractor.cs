@@ -39,6 +39,19 @@ public class ColumnExtractor : ExpressionVisitor
         return base.VisitMember(node);
     }
 
+    protected override Expression VisitMethodCall(MethodCallExpression node)
+    {
+        if(node.Method.DeclaringType?.Name == "SqlFunctions" && node.Method.Name == "Count")
+        {
+            var argument = node.Arguments[0] as ConstantExpression;
+            var result = node.Method.Invoke(null, [argument.Value]);
+            _columns.Add($"{result}");
+            _aliases.Add(""); // L'alias sera ajouté dans VisitNew
+            return node;
+        }
+        return base.VisitMethodCall(node);
+    }
+
     protected override Expression VisitNew(NewExpression node)
     {
         for(var i = 0; i < node.Arguments.Count; i++)

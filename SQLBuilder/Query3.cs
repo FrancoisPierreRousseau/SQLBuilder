@@ -50,6 +50,8 @@ public class Query2<T> where T : class, new()
     public StringBuilder _orderByBuilder = new();
     public StringBuilder _joinBuilder = new();
     public StringBuilder _selectBuilder = new();
+    public StringBuilder _groupByBuilder = new();
+
 
     public int? _skip;
     public int? _take;
@@ -86,6 +88,13 @@ public class Query2<T> where T : class, new()
             _orderByBuilder.Append(", ");
 
         _orderByBuilder.Append(GetMemberName(keySelector));
+        return this;
+    }
+
+    public Query2<T> GroupBy(Expression<Func<T, object>> groupByExpression)
+    {
+        var columns = new ColumnExtractor().Extract(groupByExpression.Body);
+        _groupByBuilder.Append(string.Join(", ", columns));
         return this;
     }
 
@@ -179,6 +188,9 @@ public class Query2<T> where T : class, new()
             sb.Append(_whereBuilder);
         }
 
+        if(_groupByBuilder.Length > 0)
+            sb.Append($" GROUP BY {_groupByBuilder}");
+
         if(_orderByBuilder.Length > 0)
         {
             sb.Append(" ORDER BY ");
@@ -244,6 +256,15 @@ public class Query3<T1, T2> : Query2<T1>
         _selectBuilder.Append(string.Join(", ", columns));
         return this;
     }
+
+    public Query3<T1, T2> GroupBy(Expression<Func<T1, T2, object>> groupByExpression)
+    {
+        var columns = new ColumnExtractor().Extract(groupByExpression.Body);
+        _groupByBuilder.Append(string.Join(", ", columns));
+        return this;
+    }
+
+
 
     public Query3<T1, T2> Where(Expression<Func<T1, T2, bool>> predicate)
     {

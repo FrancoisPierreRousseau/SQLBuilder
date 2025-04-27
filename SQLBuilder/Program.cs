@@ -281,9 +281,9 @@ Console.WriteLine(query); */
 
 
 var query = new Query2<Users>(connection)
-    .Join<Tickets>((user, ticket) => user.Id == ticket.UserId)
-    .LeftJoin<FollowUpSheets>((ticket, follow) => ticket.Id == follow.TicketId)
-    .Select((user, ticket) => new { AliasId = user.Id, AliasComment = ticket.Comment })
+    .Join<Tickets>((users, tickets) => users.Id == tickets.UserId)
+    .LeftJoin<FollowUpSheets>((tickets, followUpSheets) => tickets.Id == followUpSheets.TicketId)
+    .Select((user, ticket) => new { AliasId = user.Id, AliasComment = ticket.Comment, CountMember = SqlFunctions.Count("Users.Id") })
     .Where((user, follow) => follow.TicketId > 100)
     .OrderBy(user => user.Name)
     .ToList();
