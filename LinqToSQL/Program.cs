@@ -47,6 +47,15 @@ var rightJoin = new Query<Users>()
                 .RightJoin<Users, Tickets, Users, FollowUpSheets>((Users, Tickets, Users2, FollowUpSheets) => FollowUpSheets.TicketId == Tickets.Id)
                 .ToList();
 
+// SELECT * FROM Users INNER JOIN (SELECT Tickets.UserId FROM Tickets WHERE (t.State = 1)) AS TicketsSub ON (user.Id = ticketSub.UserId)
+var ticketsSubquery = new Query<Tickets>()
+    .Where(t => t.State == 1)
+    .Select(t => t.UserId);
+
+var query = new Query<Users>()
+    .JoinSubquery("TicketsSub", ticketsSubquery, (user, ticketSub) => user.Id == ticketSub.UserId)
+    .ToList();
+
 
 /*
  * Filtre 
@@ -250,6 +259,8 @@ var notExists = new Query<Users>()
 
 
 
+
+// Extensions à faire gafs
 
 
 /*
