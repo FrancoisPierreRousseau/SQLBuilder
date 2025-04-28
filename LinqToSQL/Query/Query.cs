@@ -13,8 +13,10 @@ public class Query<T> where T : class, new()
     public StringBuilder _selectBuilder = new();
     public StringBuilder _groupByBuilder = new();
     public StringBuilder _havingBuilder = new();
-    private List<string> _subqueries = new();
+    private List<string> _unions = new();
 
+
+    private bool _isDistinct = false;
 
     public int? _skip;
     public int? _take;
@@ -43,6 +45,34 @@ public class Query<T> where T : class, new()
         return sql;
     }
 
+    public Query<T> Like(Expression<Func<T, string?>> column, string value)
+    {
+        var columnName = GetMemberName(column.Body);
+        _whereBuilder.Append($"{columnName} LIKE %{value}%");
+        return this;
+    }
+
+    public string DeleteAll()
+    {
+        var tableName = typeof(T).Name;
+        return $"DELETE FROM {tableName}";
+    }
+
+    public Query<T> Like(Expression<Func<T, DateTime?>> column, DateTime value)
+    {
+        var columnName = GetMemberName(column.Body);
+        _whereBuilder.Append($"{columnName} LIKE %{value.ToString("yyyy-MM-dd")}%");
+        return this;
+    }
+
+
+    public Query<T> CaseWhen(Expression<Func<T, bool>> condition, string trueValue, string falseValue)
+    {
+        var conditionSql = ExpressionToSqlTranslator.Translate2(condition);
+        _selectBuilder.Append($"CASE WHEN {conditionSql} THEN {trueValue} ELSE {falseValue} END");
+
+        return this;
+    }
 
     public string Update(T entity, Expression<Func<T, bool>> predicate)
     {
@@ -166,15 +196,32 @@ public class Query<T> where T : class, new()
     public string Delete(Expression<Func<T, bool>> whereExpression)
     {
         var tableName = typeof(T).Name; // Plus tard on utilisera un TableAttribute
-        var whereClause = ExpressionToSqlTranslator.Translate(whereExpression);
-        return $"DELETE FROM {tableName} WHERE {whereClause.Sql}";
+        var whereClause = ExpressionToSqlTranslator.Translate2(whereExpression);
+        return $"DELETE FROM {tableName} WHERE {whereClause}";
     }
+
+    public Query<T> Distinct()
+    {
+        _isDistinct = true;
+        return this;
+    }
+
+    public Query<T> Union<T1>(Query<T1> otherQuery) where T1 : class, new()
+    {
+        _unions.Add(otherQuery.BuildSql());
+        return this;
+    }
+
     private string BuildSql()
     {
         var tableName = typeof(T).Name;
         var sb = new StringBuilder();
 
         sb.Append("SELECT ");
+
+        if(_isDistinct)
+            sb.Append("DISTINCT ");
+
         if(_selectBuilder.Length > 0)
             sb.Append(_selectBuilder);
         else
@@ -220,8 +267,22 @@ public class Query<T> where T : class, new()
             }
         }
 
+        foreach(var unionQuery in _unions)
+        {
+            sb.AppendLine();
+            sb.Append("UNION");
+            sb.AppendLine();
+            sb.Append(unionQuery);
+        }
+
         return sb.ToString();
     }
+
+    public string ToSubQuery()
+    {
+        return $"({BuildSql()})";
+    }
+
 
     public static string GetMemberName(Expression expression)
     {

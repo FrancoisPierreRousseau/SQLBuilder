@@ -170,13 +170,113 @@ var manyInsert = new Query<Users>().InsertMany(users);
 
 
 /*
- * DELETE FROM Users WHERE (Users.Id = @p0)
  * Delete
+ * DELETE FROM Users WHERE (Users.Id = @p0)
  */
 
 var delete = new Query<Users>().Delete(Users => Users.Id == 1);
 
+// DELETE FROM Users
+var deleteAll = new Query<Users>().DeleteAll();
 
+
+/*
+ * Distinct
+ * SELECT DISTINCT * FROM Users
+ * Bemole : Je peux rajouter plusieurs Distinct et cela ne fonctiionne pas avec '*'
+ */
+
+var distinct = new Query<Users>()
+    .Distinct().ToList();
+
+
+/*
+ * SELECT * FROM Users
+ * UNION
+ * SELECT * FROM Tickets
+ */
+
+var union = new Query<Users>().Union(new Query<Tickets>()).ToList();
+
+
+/****** IN / NOT IN ******/
+
+/*
+ * Sous requêtes
+ */
+
+// SELECT * FROM Users WHERE Users.Id IN (SELECT Tickets.UserId FROM Tickets WHERE (Tickets.Status = 1))
+var subQuery = new Query<Tickets>()
+                    .Where(Tickets => Tickets.Status == 1)
+                    .Select(Tickets => Tickets.UserId);
+
+var inWithSubQuerues = new Query<Users>()
+                .WhereIn(Users => Users.Id, subQuery)
+                .ToList();
+
+// SELECT * FROM Users WHERE Users.Id NOT IN (SELECT Tickets.UserId FROM Tickets WHERE (Tickets.Status = 1))
+var notIn = new Query<Tickets>()
+                    .Where(Tickets => Tickets.Status == 1)
+                    .Select(Tickets => Tickets.UserId);
+
+var notInWithSubQuerues = new Query<Users>()
+                .WhereNotIn(Users => Users.Id, subQuery)
+                .ToList();
+
+
+
+// EXISTS / NOT EXISTS
+
+
+/*
+ * Sous requêtes
+ * Restiction: au niveau des selection on ne peut pas faire (SELECT 1 )
+ */
+
+var subQueryExists = new Query<Tickets>()
+                    .Where(Tickets => Tickets.Status == 1)
+                    .Select(Tickets => Tickets.UserId);
+
+// SELECT * FROM Users WHERE EXISTS (SELECT Tickets.UserId FROM Tickets WHERE (Tickets.Status = 1))
+
+var exitsWithSubQuerues = new Query<Users>()
+                .WhereExists(subQuery)
+                .ToList();
+
+// SELECT * FROM Users WHERE NOT EXISTS (SELECT Tickets.UserId FROM Tickets WHERE (Tickets.Status = 1))
+var notExists = new Query<Users>()
+                .WhereNotExists(subQuery)
+                .ToList();
+
+
+
+
+
+/*
+ * Like
+ * Ne prend en compte pour l'instant que les %%
+ * Choisir le format de la date 
+ */
+
+
+// SELECT * FROM Users WHERE Users.Name LIKE %François%
+var LikeString = new Query<Users>()
+    .Like(Users => Users.Name, "François")
+    .ToList();
+
+// SELECT * FROM Users WHERE Users.CreateAt LIKE %2025-04-28% 
+var LikeDate = new Query<Users>()
+    .Like(Users => Users.CreateAt, DateTime.Now)
+    .ToList();
+
+/*
+ * SELECT CASE WHEN ((Users.AgencyId = 1) OR (Users.Id <> 2)) THEN Fait cela ELSE Sinon fait ceci END FROM Users
+ * Un peu trop limité. Pas d'imbrication, pas d'alias rien.. :/
+ */
+
+var CaseWhen = new Query<Users>()
+    .CaseWhen(Users => Users.AgencyId == 1 || Users.Id != 2, "Fait cela", "Sinon fait ceci")
+    .ToList();
 
 Console.WriteLine(sqlInsert);
 
