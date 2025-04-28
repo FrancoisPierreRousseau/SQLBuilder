@@ -13,6 +13,7 @@ public class Query<T> where T : class, new()
     public StringBuilder _selectBuilder = new();
     public StringBuilder _groupByBuilder = new();
     public StringBuilder _havingBuilder = new();
+    private List<string> _subqueries = new();
 
 
     public int? _skip;
@@ -162,7 +163,12 @@ public class Query<T> where T : class, new()
         return this; // Retourne la même instance pour le chaînage
     }
 
-
+    public string Delete(Expression<Func<T, bool>> whereExpression)
+    {
+        var tableName = typeof(T).Name; // Plus tard on utilisera un TableAttribute
+        var whereClause = ExpressionToSqlTranslator.Translate(whereExpression);
+        return $"DELETE FROM {tableName} WHERE {whereClause.Sql}";
+    }
     private string BuildSql()
     {
         var tableName = typeof(T).Name;

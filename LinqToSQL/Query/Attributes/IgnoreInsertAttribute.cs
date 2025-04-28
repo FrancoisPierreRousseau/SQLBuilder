@@ -1,4 +1,6 @@
 ﻿namespace LinqToSQL.Query.Attributes;
-internal class IgnoreInsertAttribute
+
+[AttributeUsage(AttributeTargets.Property)]
+public class IgnoreInsertAttribute : Attribute
 {
 }

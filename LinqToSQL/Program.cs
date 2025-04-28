@@ -2,6 +2,7 @@
 using LinqToSQL.Entities;
 using LinqToSQL.Query;
 using LinqToSQL.Query.Extensions;
+using LinqToSQL.Traduction;
 
 
 /**
@@ -83,5 +84,100 @@ var paginaded = new Query<Tickets>()
                 .Take(20)
                 .ToList();
 
-Console.WriteLine(paginaded);
+
+/*
+ * Fonction Scallaire
+ * SELECT Tickets.Id, COUNT(Orders.Id) AS Count FROM Tickets
+ *   
+ */
+
+var selectFonctionScallaire = new Query<Tickets>()
+    .Select(tickets => new { tickets.Id, Count = SqlFunctions.Count("Orders.Count") })
+    .Select(tickets => new { Sum = SqlFunctions.Sum("Orders.Sum"), Avg = SqlFunctions.Avg("Order.Sum") })
+    .ToList();
+
+/*
+ * Having / Group By
+ * Restriction: Le HAVING est ignoré si la clause GROUP BY n'est pas renseignée.
+ * SELECT * FROM Tickets GROUP BY Tickets.Id, Tickets.ClotureAt HAVING (Tickets.State > AVG(Order.Id))
+ */
+
+var having = new Query<Tickets>()
+    .GroupBy(Tickets => new { Tickets.Id, Tickets.ClotureAt })
+    .Having(Tickets => Tickets.State > SqlFunctions.Avg("Order.Id"))
+    .ToList();
+
+
+
+
+// Il manque le BulkInsert et les fonction sql à présenter et potentiellement pofiner
+
+
+
+
+// J'aimerais implémenter les sous requête, la clause (IN), Merge...
+
+
+/*
+ * Mis à jour
+ * UPDATE Users SET Id = @Id, AgencyId = @AgencyId, Name = @Name, Password = @Password WHERE (Users.Id = 1)
+ */
+
+var updateUser = new Users { Name = "name maj", Password = "password maj", AgencyId = 2 };
+
+var sqlUpdate = new Query<Users>().Update(updateUser, (Users) => Users.Id == 1);
+
+
+/*
+ * Insertion 
+ * INSERT INTO Users (Id, AgencyId, Name, Password, CreateAt, UpdateAt, FirstName) VALUES (@Id, @AgencyId, @Name, @Password, @CreateAt, @UpdateAt, @FirstName)
+ * Plut tard il serra important de précisé qu'est ce qui se passe si on ne renseigne pas certaines valeurs (je pense quels sont défini auotmatiquement à null)
+ */
+
+var newUser = new Users
+{
+    Name = "François",
+    Password = "password",
+    FirstName = "firstName"
+};
+
+var sqlInsert = new Query<Users>().Insert(newUser);
+
+/*
+ * Insertion en masse (BulkInsert)
+ * INSERT INTO Users (Id, AgencyId, Name, Password, CreateAt, UpdateAt, FirstName) VALUES (@Id_0, @AgencyId_0, @Name_0, @Password_0, @CreateAt_0, @UpdateAt_0, @FirstName_0), (@Id_1, @AgencyId_1, @Name_1, @Password_1, @CreateAt_1, @UpdateAt_1, @FirstName_1), (@Id_2, @AgencyId_2, @Name_2, @Password_2, @CreateAt_2, @UpdateAt_2, @FirstName_2)
+ */
+
+List<Users> users = [
+    new Users {
+        Name = "François",
+        Password = "password",
+        FirstName = "firstName"
+    },
+    new Users {
+        Name = "Marie",
+        Password = "password1",
+        FirstName = "oeoeoe"
+    },
+    new Users {
+        Name = "Jacque",
+        Password = "Jacquie",
+        FirstName = "dddd"
+    }
+];
+
+var manyInsert = new Query<Users>().InsertMany(users);
+
+
+/*
+ * DELETE FROM Users WHERE (Users.Id = @p0)
+ * Delete
+ */
+
+var delete = new Query<Users>().Delete(Users => Users.Id == 1);
+
+
+
+Console.WriteLine(sqlInsert);
+
 
