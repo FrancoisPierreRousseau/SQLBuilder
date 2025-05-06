@@ -5,7 +5,7 @@ using System.Linq.Expressions;
 
 namespace LinqToSQL.Query;
 
-public class Query<T> : IQueryToSql where T : class, new()
+public class Query<T> where T : class, new()
 {
     private readonly InsertSqlBuilder _insertSqlBuilder = new();
     private readonly SelectSqlBuilder _selectBuilder = new();
@@ -74,6 +74,108 @@ public class Query<T> : IQueryToSql where T : class, new()
         _selectModel.WhereClauses.Add(clause);
         return this;
     }
+
+
+    public Query<T> WhereExists<T2>(
+    Expression<Func<T, T2, bool>> correlationPredicate,
+    Func<Query<T2>, Query<T2>>? subqueryBuilder = null)
+    where T2 : class, new()
+    {
+        var joinClause = WhereExpressionTranslator.Translate(correlationPredicate);
+
+        var subQuery = new Query<T2>().SelectRawColumn("1"); // SELECT 1 FROM ...
+        subQuery._selectModel.WhereClauses.Add(joinClause);  // condition de corrélation
+
+        if(subqueryBuilder != null)
+            subQuery = subqueryBuilder(subQuery);
+
+        var subSql = subQuery.ToList();
+        _selectModel.WhereClauses.Add($"EXISTS ({subSql})");
+
+        return this;
+    }
+
+
+    public Query<T> WhereNotExists<T2>(
+    Expression<Func<T, T2, bool>> correlationPredicate,
+    Func<Query<T2>, Query<T2>>? subqueryBuilder = null)
+    where T2 : class, new()
+    {
+        var joinClause = WhereExpressionTranslator.Translate(correlationPredicate);
+
+        var subQuery = new Query<T2>().SelectRawColumn("1");
+        subQuery._selectModel.WhereClauses.Add(joinClause);
+
+        if(subqueryBuilder != null)
+            subQuery = subqueryBuilder(subQuery);
+
+        var subSql = subQuery.ToList();
+        _selectModel.WhereClauses.Add($"NOT EXISTS ({subSql})");
+
+        return this;
+    }
+
+
+
+    public Query<T> WhereIn<TInner>(
+    Expression<Func<T, object>> outerSelector,
+    Expression<Func<T, TInner, object>> innerSelector)
+    where TInner : class, new()
+    {
+        var outerColumn = ExpressionHelper.ExtractColumnName(outerSelector);
+        var innerColumn = ExpressionHelper.ExtractColumnName(innerSelector);
+
+        var subModel = new SelectQueryModel
+        {
+            TableName = EntityMetadataProvider.GetMetadata<TInner>().TableName
+        };
+
+        subModel.Columns.Add(innerColumn);
+
+        var subSql = _selectBuilder.BuildSql(subModel);
+        _selectModel.WhereClauses.Add($"{outerColumn} IN ({subSql})");
+        return this;
+    }
+
+
+    public Query<T> WhereIn<T2>(
+    Expression<Func<T, T2, bool>> correlationPredicate,
+    Func<Query<T2>, Query<T2>>? subqueryBuilder = null)
+    where T2 : class, new()
+    {
+        if(correlationPredicate.Body is BinaryExpression binary && binary.NodeType == ExpressionType.Equal)
+        {
+            var outerCol = ExtractColumnFromBinarySide<T>(binary.Left) ?? ExtractColumnFromBinarySide<T>(binary.Right);
+            var innerCol = ExtractColumnFromBinarySide<T2>(binary.Left) ?? ExtractColumnFromBinarySide<T2>(binary.Right);
+
+            if(outerCol == null || innerCol == null)
+                throw new NotSupportedException("Could not determine columns from predicate.");
+
+            var subQuery = new Query<T2>();
+            subQuery._selectModel.Columns.Add(innerCol);
+
+            if(subqueryBuilder != null)
+            {
+                subQuery = subqueryBuilder(subQuery);
+            }
+
+            var subSql = subQuery.ToList(); // = génère le SQL
+
+            _selectModel.WhereClauses.Add($"{outerCol} IN ({subSql})");
+
+            return this;
+        }
+
+        throw new NotSupportedException("Only simple equality expressions are supported.");
+    }
+
+
+    public Query<T> SelectRawColumn(string column)
+    {
+        _selectModel.Columns.Add(column);
+        return this;
+    }
+
 
     public Query<T> Join<T2>(Expression<Func<T, T2, bool>> joinPredicate) where T2 : class, new()
     {
@@ -261,6 +363,22 @@ public class Query<T> : IQueryToSql where T : class, new()
         _selectModel.IsDistinct = true;
         return this;
     }
+
+
+    private string? ExtractColumnFromBinarySide<TTarget>(Expression side)
+    {
+        if(side is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+            side = unary.Operand;
+
+        if(side is MemberExpression member && member.Expression is ParameterExpression param
+            && param.Type == typeof(TTarget))
+        {
+            return $"{typeof(TTarget).Name}.{member.Member.Name}";
+        }
+
+        return null;
+    }
+
 }
 
 

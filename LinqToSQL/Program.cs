@@ -222,23 +222,20 @@ var simpleIn = db.Users
 
 /*
  * Sous requêtes
- * Ne fonctionne pas encore correctement car aucun accés aux contexte parent. 
+ * Ne fonctionne pas encore correctement car les requêtes corréle ne sontt pas fonctitionnel
  */
 
 
 // SELECT * FROM Users WHERE Users.Id IN (SELECT Tickets.UserId FROM Tickets WHERE (Tickets.Status = 1))
-var subQuery = new Query<Tickets>()
-                   .Where(Tickets => Tickets.Status == 1)
-                   .Select(Tickets => Tickets.UserId);
 
-var inWithSubQuerues = db.Users
-               .Where(u => SubQueries.In(u.Id, subQuery))
-               .ToList();
+var inQuery = db.Users.WhereIn<Tickets>((u, t) => u.Id == t.UserId, (q) => q.Where(t => t.Status == 1)).ToList();
+
+
 
 // SELECT * FROM Users WHERE Users.Id NOT IN (SELECT Tickets.UserId FROM Tickets WHERE (Tickets.Status = 1))
 /* var notIn = new Query<Tickets>()
                     .Where(Tickets => Tickets.Status == 1)
-                    .Select(Tickets => Tickets.UserId);
+                    .Select(Tickets => Tickets.UserId)
 
 var notInWithSubQuerues = new Query<Users>()
                 .WhereNotIn(Users => Users.Id, subQuery)
@@ -255,30 +252,26 @@ var notInWithSubQuerues = new Query<Users>()
  * J'ai une solution de contournement mais pas satisfaisante. 
  */
 
-var subQueryExists = new Query<Tickets>()
-                    .Where(Tickets => Tickets.Status == 1)
-                    .Select(Tickets => Tickets.UserId);
 
-// SELECT * FROM Users WHERE EXISTS (SELECT * FROM Tickets WHERE (Users.Id = Tickets.UserId))
+// SELECT * FROM Users WHERE EXISTS (SELECT * FROM Tickets WHERE ((Users.Id = Tickets.UserId) AND (Tickets.Status = 1)))
 // Solution de contournement implémenté
 
-/* var exitsWithSubQuerues = new Query<Users>()
-                .WhereExists<Users, Tickets>((Users, Tickets) => Users.Id == Tickets.UserId)
-                .ToList(); */
+var usersWithTickets = db.Users
+    .WhereExists<Tickets>((u, t) => u.Id == t.UserId && t.Status == 1)
+    .ToList();
+
+var usersWithTickets2 = db.Users
+    .WhereExists<Tickets>((u, t) => u.Id == t.UserId, q => q.Where(t => t.Status == 1))
+    .ToList();
 
 
+// SELECT * FROM Users WHERE NOT EXISTS (SELECT 1 FROM Tickets WHERE (Users.Id = Tickets.UserId) AND (Tickets.Status = 1))
+var notExists = db.Users
+                .WhereNotExists<Tickets>((u, t) => u.Id == t.UserId, q => q.Where(t => t.Status == 1))
+                .ToList();
 
 
-
-
-
-
-// SELECT * FROM Users WHERE NOT EXISTS (SELECT Tickets.UserId FROM Tickets WHERE (Tickets.Status = 1))
-/* var notExists = new Query<Users>()
-                .WhereNotExists(subQuery)
-                .ToList(); */
-
-
+Console.WriteLine("Pause");
 
 
 // Extensions à faire gafs

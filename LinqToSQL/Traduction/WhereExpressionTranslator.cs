@@ -1,5 +1,4 @@
-﻿using LinqToSQL.Query;
-using System.Collections;
+﻿using System.Collections;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
@@ -92,36 +91,6 @@ public static class WhereExpressionTranslator
                     }
 
                     sb.Append($"({string.Join(", ", literals)})");
-                }
-                else if(methodCall.Method.DeclaringType == typeof(SubQueries))
-                {
-                    if(methodCall.Method.Name == "Exists")
-                    {
-                        var subQueryExpr = methodCall.Arguments[0];
-
-                        if(Evaluate(subQueryExpr) is not Query<object> subQuery)
-                            throw new NotSupportedException("Subquery must be a Query<T>");
-
-                        sb.Append("EXISTS ");
-                        sb.Append(subQuery.ToList());
-                    }
-                    else if(methodCall.Method.Name == "In")
-                    {
-                        var leftExpr = methodCall.Arguments[0];
-                        var subQueryExpr = methodCall.Arguments[1];
-
-                        if(Evaluate(subQueryExpr) is not IQueryToSql subQuery)
-                            throw new NotSupportedException("Subquery must be a Query<T>");
-
-                        Visit(leftExpr, sb);
-                        sb.Append(" IN (");
-                        sb.Append(subQuery.ToList());
-                        sb.Append(')');
-                    }
-                    else
-                    {
-                        throw new NotSupportedException($"Unsupported subquery function: {methodCall.Method.Name}");
-                    }
                 }
                 else if(methodCall.Method.DeclaringType.Name == nameof(SqlFunctions))
                 {
