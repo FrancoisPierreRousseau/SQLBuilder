@@ -1,20 +1,17 @@
 ﻿namespace LinqToSQL.Traduction;
 
 
-public class SqlFunctions
+public static class SqlFunctions
 {
-    public static int Count(object column)
-    {
-        throw new NotSupportedException("This method should only be used in expressions and translated to SQL.");
-    }
+    public static int Count(string column) =>
+        throw new NotSupportedException("This method is only meant to be parsed in expression trees.");
 
-    public static int Sum(object column)
-    {
-        throw new NotSupportedException("This method should only be used in expressions and translated to SQL.");
-    }
+    public static int Sum(string column) =>
+        throw new NotSupportedException("This method is only meant to be parsed in expression trees.");
 
-    public static int Avg(object column)
-    {
-        throw new NotSupportedException("This method should only be used in expressions and translated to SQL.");
-    }
+    public static int Avg(string column) =>
+        throw new NotSupportedException("This method is only meant to be parsed in expression trees.");
 }
+
+
+
