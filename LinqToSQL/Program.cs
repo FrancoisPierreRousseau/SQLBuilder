@@ -26,13 +26,12 @@ var selectWithAlias = new Query<Tickets>()
 /**
  * Jointure
  * Restriction : si une jointure est déjà présente dans la requête, alors on génère une exception.
- *               les mêmes noms de tables doivent être réutilisés dans l'expression.
  */
 
 // "SELECT * FROM Users INNER JOIN Tickets ON (Users.Id = Tickets.UserId) INNER JOIN FollowUpSheets ON (FollowUpSheets.TicketId = Tickets.Id)"
 var join = new Query<Users>()
-                .Join<Users, Tickets>((Users, Tickets) => Users.Id == Tickets.UserId)
-                .Join<Users, Tickets, Users, FollowUpSheets>((Users, Tickets, Users2, FollowUpSheets) => FollowUpSheets.TicketId == Tickets.Id)
+                .Join<Users, Tickets>((u, t) => u.Id == t.UserId)
+                .Join<Users, Tickets, Users, FollowUpSheets>((u, t, u2, f) => f.TicketId == t.Id)
                 .ToList();
 
 // SELECT * FROM Users LEFT JOIN Tickets ON (Users.Id = Tickets.UserId) LEFT JOIN FollowUpSheets ON (FollowUpSheets.TicketId = Tickets.Id)
@@ -43,11 +42,12 @@ var leftJoin = new Query<Users>()
 
 // SELECT * FROM Users RIGHT JOIN Tickets ON (Users.Id = Tickets.UserId) RIGHT JOIN FollowUpSheets ON (FollowUpSheets.TicketId = Tickets.Id)
 var rightJoin = new Query<Users>()
-                .RightJoin<Users, Tickets>((Users, Tickets) => Users.Id == Tickets.UserId)
-                .RightJoin<Users, Tickets, Users, FollowUpSheets>((Users, Tickets, Users2, FollowUpSheets) => FollowUpSheets.TicketId == Tickets.Id)
+                .RightJoin<Users, Tickets>((u, t) => u.Id == t.UserId)
+                .RightJoin<Users, Tickets, Users, FollowUpSheets>((u, t, u2, f) => f.TicketId == t.Id)
                 .ToList();
 
-// SELECT * FROM Users INNER JOIN (SELECT Tickets.UserId FROM Tickets WHERE (t.State = 1)) AS TicketsSub ON (user.Id = ticketSub.UserId)
+// Ne fonctionne plus 
+// SELECT * FROM Users INNER JOIN (SELECT Tickets.UserId FROM Tickets WHERE (t.State = 1)) AS TicketsSub ON (Users.Id = Tickets.UserId)
 var ticketsSubquery = new Query<Tickets>()
     .Where(t => t.State == 1)
     .Select(t => t.UserId);
@@ -63,8 +63,8 @@ var query = new Query<Users>()
  */
 
 var filtre = new Query<Users>()
-               .Where(Users => (Users.Id > 2 && Users.AgencyId > 4) || Users.AgencyId > 5)
-               .Where<Users, FollowUpSheets>((Users, FollowUpSheets) => FollowUpSheets.TicketId > 10)
+               .Where(u => (u.Id > 2 && u.AgencyId > 4) || u.AgencyId > 5)
+               .Where<Users, FollowUpSheets>((u, FollowUpSheets) => FollowUpSheets.TicketId > 10)
                .Where<Users, FollowUpSheets, Tickets>((Users, FollowUpSheets, Tickets) => Tickets.Origin > 10 && Tickets.Status != 100)
                .Where<Users, FollowUpSheets, Tickets, FollowUpSheets>((Users, FollowUpSheets, Tickets, FollowUpSheets2) => FollowUpSheets2.TicketId > 100)
                .ToList();
@@ -210,8 +210,10 @@ var union = new Query<Users>().Union(new Query<Tickets>()).ToList();
 
 /****** IN / NOT IN ******/
 
+
 /*
  * Sous requêtes
+ * Ne fonctionne pas encore correctement car aucun accés aux contexte parent. 
  */
 
 // SELECT * FROM Users WHERE Users.Id IN (SELECT Tickets.UserId FROM Tickets WHERE (Tickets.Status = 1))
@@ -239,18 +241,28 @@ var notInWithSubQuerues = new Query<Users>()
 
 /*
  * Sous requêtes
- * Restiction: au niveau des selection on ne peut pas faire (SELECT 1 )
+ * Restriction: au niveau des selection on ne peut pas faire (SELECT 1 )
+ * Ne fonctionne pas encore correctement car aucun accés aux contexte parent. 
+ * J'ai une solution de contournement mais pas satisfaisante. 
  */
 
 var subQueryExists = new Query<Tickets>()
                     .Where(Tickets => Tickets.Status == 1)
                     .Select(Tickets => Tickets.UserId);
 
-// SELECT * FROM Users WHERE EXISTS (SELECT Tickets.UserId FROM Tickets WHERE (Tickets.Status = 1))
+// SELECT * FROM Users WHERE EXISTS (SELECT * FROM Tickets WHERE (Users.Id = Tickets.UserId))
+// Solution de contournement implémenté
 
 var exitsWithSubQuerues = new Query<Users>()
-                .WhereExists(subQuery)
+                .WhereExists<Users, Tickets>((Users, Tickets) => Users.Id == Tickets.UserId)
                 .ToList();
+
+
+
+
+
+
+
 
 // SELECT * FROM Users WHERE NOT EXISTS (SELECT Tickets.UserId FROM Tickets WHERE (Tickets.Status = 1))
 var notExists = new Query<Users>()

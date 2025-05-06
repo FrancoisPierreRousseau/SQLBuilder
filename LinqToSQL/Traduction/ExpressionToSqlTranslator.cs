@@ -109,7 +109,7 @@ public static class ExpressionToSqlTranslator
             if(node.Expression is ParameterExpression paramExpr)
             {
                 // Utilise le nom du paramètre (ex: "u", "o") comme préfixe
-                _sql.Append($"{paramExpr.Name}.{node.Member.Name}");
+                _sql.Append($"{paramExpr.Type.Name}.{node.Member.Name}");
                 return node;
             }
 
