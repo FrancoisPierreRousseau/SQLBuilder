@@ -8,7 +8,6 @@ namespace LinqToSQL.Query;
 public class Query<T> where T : class, new()
 {
     private readonly InsertSqlBuilder _insertSqlBuilder = new();
-    private readonly SelectSqlBuilder _selectBuilder = new();
     private readonly UpdateSqlBuilder _updateSqlBuilder = new();
     private readonly DeleteSqlBuilder _deleteSqlBuilder = new();
 
@@ -132,7 +131,7 @@ public class Query<T> where T : class, new()
 
         subModel.Columns.Add(innerColumn);
 
-        var subSql = _selectBuilder.BuildSql(subModel);
+        var subSql = new SqlGenerator(_selectModel).GenerateSelect();
         _selectModel.WhereClauses.Add($"{outerColumn} IN ({subSql})");
         return this;
     }
@@ -289,7 +288,7 @@ public class Query<T> where T : class, new()
 
     public string ToList()
     {
-        return _selectBuilder.BuildSql(_selectModel);
+        return new SqlGenerator(_selectModel).GenerateSelect();
     }
 
     public string InsertMany(List<T> entities)

@@ -14,16 +14,19 @@ var db = new AppDbContext();
  * Select 
  */
 
-// "SELECT * FROM Tickets"
+// SELECT*
+// FROM Tickets
 var sekectAll = db.Tickets
                 .ToList();
 
-// "SELECT Tickets.Id, Tickets.Status, Tickets.Origin FROM Tickets"
+// SELECT Tickets.Id AS Id, Tickets.Status AS Status, Tickets.Origin AS Origin
+// FROM Tickets
 var selectWithField = db.Tickets
     .Select((user) => new { user.Id, user.Status, user.Origin })
     .ToList();
 
-// SELECT Tickets.Id AS Alias1, Tickets.Status AS Alias2, Tickets.Origin AS Alias3 FROM Tickets
+// SELECT Tickets.Id AS Alias1, Tickets.Status AS Alias2, Tickets.Origin AS Alias3
+// FROM Tickets
 var selectWithAlias = db.Tickets
     .Select((user) => new { Alias1 = user.Id, Alias2 = user.Status, Alias3 = user.Origin })
     .ToList();
@@ -33,19 +36,28 @@ var selectWithAlias = db.Tickets
  * Restriction : si une jointure est déjà présente dans la requête, alors on génère une exception.
  */
 
-// "SELECT * FROM Users INNER JOIN Tickets ON (Users.Id = Tickets.UserId) INNER JOIN FollowUpSheets ON (FollowUpSheets.TicketId = Tickets.Id)"
+// SELECT*
+// FROM Users
+// INNER JOIN Tickets ON (Users.Id = Tickets.UserId)
+// INNER JOIN Tickets ON (FollowUpSheets.TicketId = Tickets.Id)
 var join = db.Users
     .Join<Tickets>((u, t) => u.Id == t.UserId)
     .Join<Tickets, Users, FollowUpSheets>((u, t, u2, f) => f.TicketId == t.Id)
     .ToList();
 
-// SELECT * FROM Users LEFT JOIN Tickets ON (Users.Id = Tickets.UserId) LEFT JOIN FollowUpSheets ON (FollowUpSheets.TicketId = Tickets.Id)
+// SELECT*
+// FROM Users
+// LEFT JOIN Tickets ON (Users.Id = Tickets.UserId)
+// LEFT JOIN Tickets ON (FollowUpSheets.TicketId = Tickets.Id)
 var leftJoin = db.Users
     .LeftJoin<Tickets>((Users, Tickets) => Users.Id == Tickets.UserId)
     .LeftJoin<Tickets, Users, FollowUpSheets>((Users, Tickets, Users2, FollowUpSheets) => FollowUpSheets.TicketId == Tickets.Id)
     .ToList();
 
-// SELECT * FROM Users RIGHT JOIN Tickets ON (Users.Id = Tickets.UserId) RIGHT JOIN FollowUpSheets ON (FollowUpSheets.TicketId = Tickets.Id)
+// SELECT*
+// FROM Users
+// RIGHT JOIN Tickets ON (Users.Id = Tickets.UserId)
+// RIGHT JOIN Tickets ON (FollowUpSheets.TicketId = Tickets.Id)
 var rightJoin = db.Users
     .RightJoin<Tickets>((u, t) => u.Id == t.UserId)
     .RightJoin<Tickets, Users, FollowUpSheets>((u, t, u2, f) => f.TicketId == t.Id)
@@ -63,9 +75,10 @@ var query = new Query<Users>()
 
 /*
  * Filtre 
- * SELECT * FROM Users WHERE (((Users.Id > 2) AND (Users.AgencyId > 4)) OR (Users.AgencyId > 5)) AND (FollowUpSheets.TicketId > 10) AND ((Tickets.Origin > 10) AND (Tickets.Status <> 100)) AND (FollowUpSheets2.TicketId > 100)
+ * SELECT *
+ * FROM Users
+ * WHERE (((Users.Id > 2) AND (Users.AgencyId > 4)) OR (Users.AgencyId > 5)) AND (FollowUpSheets.TicketId > 10) AND ((Tickets.Origin > 10) AND (Tickets.Status <> 100)) AND (FollowUpSheets.TicketId > 100)
  */
-
 var filtre = db.Users
     .Where(u => (u.Id > 2 && u.AgencyId > 4) || u.AgencyId > 5)
     .Where<FollowUpSheets>((u, FollowUpSheets) => FollowUpSheets.TicketId > 10)
@@ -89,7 +102,11 @@ var filtre = db.Users
 
 /*
  * Pagination
- * SELECT * FROM Tickets ORDER BY (SELECT NULL) OFFSET 10 ROWS FETCH NEXT 20 ROWS ONLY
+ * SELECT *
+ * FROM Tickets
+ * ORDER BY (SELECT NULL)
+ * OFFSET 10 ROWS
+ * FETCH NEXT 20 ROWS ONLY
  */
 
 var paginaded = db.Tickets
@@ -100,7 +117,8 @@ var paginaded = db.Tickets
 
 /*
  * Fonction Scallaire
- * SELECT Tickets.Id AS Id, COUNT(Orders.Count) AS Count, SUM(Orders.Sum) AS Sum, AVG(Order.Sum) AS Avg FROM Tickets
+ * SELECT Tickets.Id AS Id, COUNT(Orders.Count) AS Count, SUM(Orders.Sum) AS Sum, AVG(Order.Sum) AS Avg
+ * FROM Tickets
  */
 
 var selectFonctionScallaire = db.Tickets
@@ -111,9 +129,11 @@ var selectFonctionScallaire = db.Tickets
 /*
  * Having / Group By
  * Restriction: Le HAVING est ignoré si la clause GROUP BY n'est pas renseignée.
- * SELECT * FROM Tickets GROUP BY Tickets.Id, Tickets.ClotureAt HAVING (Tickets.State > AVG(Order.Id))
  */
-
+// SELECT*
+// FROM Tickets
+// GROUP BY Tickets.Id, Tickets.ClotureAt
+// HAVING (Tickets.State > AVG(Order.Id))
 var having = db.Tickets
     .GroupBy(Tickets => new { Tickets.Id, Tickets.ClotureAt })
     .Having(Tickets => Tickets.State > SqlFunctions.Avg("Order.Id"))
@@ -213,7 +233,9 @@ var distinct = db.Users
 
 /****** IN / NOT IN ******/
 
-// SELECT * FROM Users WHERE Users.Id IN (1, 2, 3)
+// SELECT*
+// FROM Users
+// WHERE Users.Id IN (1, 2, 3)
 var ids = new[] { 1, 2, 3 };
 
 var simpleIn = db.Users
@@ -226,8 +248,11 @@ var simpleIn = db.Users
  */
 
 
-// SELECT * FROM Users WHERE Users.Id IN (SELECT Tickets.UserId FROM Tickets WHERE (Tickets.Status = 1))
-
+// SELECT*
+// FROM Users
+// WHERE Users.Id IN (SELECT Tickets.UserId
+// FROM Tickets
+// WHERE (Tickets.Status = 1))
 var inQuery = db.Users.WhereIn<Tickets>((u, t) => u.Id == t.UserId, (q) => q.Where(t => t.Status == 1)).ToList();
 
 
@@ -253,9 +278,11 @@ var notInWithSubQuerues = new Query<Users>()
  */
 
 
-// SELECT * FROM Users WHERE EXISTS (SELECT * FROM Tickets WHERE ((Users.Id = Tickets.UserId) AND (Tickets.Status = 1)))
-// Solution de contournement implémenté
-
+// SELECT*
+// FROM Users
+// WHERE EXISTS (SELECT 1
+// FROM Tickets
+// WHERE ((Users.Id = Tickets.UserId) AND (Tickets.Status = 1)))
 var usersWithTickets = db.Users
     .WhereExists<Tickets>((u, t) => u.Id == t.UserId && t.Status == 1)
     .ToList();
@@ -265,7 +292,11 @@ var usersWithTickets2 = db.Users
     .ToList();
 
 
-// SELECT * FROM Users WHERE NOT EXISTS (SELECT 1 FROM Tickets WHERE (Users.Id = Tickets.UserId) AND (Tickets.Status = 1))
+// SELECT*
+// FROM Users
+// WHERE NOT EXISTS (SELECT 1
+// FROM Tickets
+// WHERE (Users.Id = Tickets.UserId) AND (Tickets.Status = 1))
 var notExists = db.Users
                 .WhereNotExists<Tickets>((u, t) => u.Id == t.UserId, q => q.Where(t => t.Status == 1))
                 .ToList();
